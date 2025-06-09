@@ -1,12 +1,10 @@
 import Image from './Image'
 import Link from './Link'
 
-const Card = ({ title, description, imgSrc, href }) => (
+const Card = ({ title, description, imgSrc, href, techStack }) => (
   <div className="md max-w-[544px] p-4 md:w-1/2">
     <div
-      className={`${
-        imgSrc && 'h-full'
-      } overflow-hidden rounded-md border-2 border-gray-200/60 dark:border-gray-700/60`}
+      className={`${imgSrc && 'h-full'} overflow-hidden rounded-md border-2 border-gray-200/60 dark:border-gray-700/60`}
     >
       {imgSrc &&
         (href ? (
@@ -39,6 +37,18 @@ const Card = ({ title, description, imgSrc, href }) => (
           )}
         </h2>
         <p className="prose mb-3 max-w-none text-gray-500 dark:text-gray-400">{description}</p>
+        {techStack && techStack.length > 0 && (
+          <div className="mb-3 flex flex-wrap gap-2">
+            {techStack.map((tech: string) => (
+              <span
+                key={tech}
+                className="bg-primary-600 inline-block rounded px-2 py-1 text-xs font-semibold text-white dark:text-white"
+              >
+                {tech}
+              </span>
+            ))}
+          </div>
+        )}
         {href && (
           <Link
             href={href}

@@ -3,22 +3,22 @@ interface Project {
   description: string
   href?: string
   imgSrc?: string
+  techStack?: string[]
 }
 
 const projectsData: Project[] = [
   {
     title: 'Bing.com',
     description: `Implemented user authentication for bing.com using OpenIdConnect.`,
-    imgSrc: '/static/images/google.png',
+    imgSrc: '/static/images/bing.png',
     href: 'https://www.bing.com',
+    techStack: ['C#', 'ASP.NET Core', 'OpenIdConnect'],
   },
   {
-    title: 'The Time Machine',
-    description: `Imagine being able to travel back in time or to the future. Simple turn the knob
-    to the desired date and press "Go". No more worrying about lost keys or
-    forgotten headphones with this simple yet affordable solution.`,
-    imgSrc: '/static/images/time-machine.jpg',
-    href: '/blog/the-time-machine',
+    title: 'E2E Testing Framework for Copilot',
+    description: `Implemented an end-to-end testing framework for Copilot using Playwright. The framework supports JSON based test authoring for easy test creation.`,
+    imgSrc: '/static/images/copilot.png',
+    techStack: ['C#', 'Playwright', 'Azure DevOps'],
   },
 ]
 
