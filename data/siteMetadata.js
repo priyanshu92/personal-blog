@@ -22,6 +22,7 @@ const siteMetadata = {
   instagram: '',
   medium: '',
   bluesky: '',
+  website: 'https://priyanshu.info',
   locale: 'en-US',
   // set to true if you want a navbar fixed to the top
   stickyNav: false,
