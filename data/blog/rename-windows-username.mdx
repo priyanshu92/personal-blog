@@ -1,0 +1,34 @@
+---
+title: Rename Default Username in Windows 11
+date: '2025-06-10'
+tags: ['windows', 'features']
+draft: false
+summary: A way to rename default username in Windows 11.
+---
+
+I recently got a new machine which came with Windows 11 pre-installed. On the first boot, it asked me to login with my Microsoft account (I think that's the only way to login to Windows now).
+
+Now, I have been using Windows since 2005 so I anyways log in to recover my system state. However, one weird thing I noticed after it booted up was that my username was not what I wanted. It was a short hand of my name (something I have seen companies do when assigning username to employees).
+
+Unsure of how Windows set this username, I started to search for ways to rename it to something I wanted. There were lot of posts and videos I watched which all assumed I had a local account but that was not the case. Since I had logged in with my Microsoft account, I couldn't manage this as a local account.
+
+After lot of searching I was eventually able to update the username. Below are the steps I followed:
+
+**NOTE: If you are doing this, ensure that you do it before installing any software otherwise you might face issues.**
+
+1. Rename the User Folder:
+    1. Open a terminal as administrator and run `net user Administrator /active:yes`.
+    1. Logout from the current user account and login as Administrator which should be visible after running the above command.
+    1. Open Explorer and go to `C:\Users\` and rename the folder with your username. *If you see an error that the folder is in use, ensure that you sign-out from that account.*
+1. Update the registry:
+    1. Open regedit (Registry Editor) by typing regedit in the Run dialog (Win + R).
+    1. Navigate to `HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList`.
+    1. Find the subkey corresponding to your user account. Look for the **ProfileImagePath** value and change it to reflect the new folder name (e.g., C:\Users\NewUsername).
+1. Restart your system.
+1. Disable administrator account by running `net user Administrator /active:no`.
+
+Following these commands will rename your user account. Some apps might be broken if they depend on the username.
+
+It might take some time for Windows Spotlight to fix the lock screen wallpaper.
+
+Hope this helps someone or me in the future!! 😊
