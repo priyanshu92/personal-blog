@@ -27,6 +27,20 @@ const projectsData: Project[] = [
     href: 'https://www.gevernova.com/software/products/asset-performance-management',
     techStack: ['C#', 'ASP.NET Core', 'Sql Server'],
   },
+  {
+    title: 'APM Scheduler Dashboard',
+    description: `A react based dashboard for APM Scheduler. It provides a user-friendly interface for managing and monitoring scheduled tasks including real time progress for on-going tasks using SignalR.`,
+    imgSrc: '/static/images/idd.png',
+    href: 'https://www.gevernova.com/software/products/asset-performance-management',
+    techStack: ['Typescript', 'React', 'SignalR'],
+  },
+  {
+    title: 'Order Management System (OMS)',
+    description: `Infosys uses OMS to manage the financial and personnel details of projects.`,
+    imgSrc: '/static/images/infy.webp',
+    href: 'https://www.infosys.com',
+    techStack: ['C#', 'ASP.NET', 'Sql Server'],
+  },
 ]
 
 export default projectsData
