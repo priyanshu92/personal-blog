@@ -30,6 +30,12 @@ export default function Home({ posts }) {
                       <dt className="sr-only">Published on</dt>
                       <dd className="text-base leading-6 font-medium text-gray-500 dark:text-gray-400">
                         <time dateTime={date}>{formatDate(date, siteMetadata.locale)}</time>
+                        {post.readingTime && (
+                          <>
+                            <span className="mx-1">•</span>
+                            <span aria-label="Reading time">{post.readingTime.text}</span>
+                          </>
+                        )}
                       </dd>
                     </dl>
                     <div className="space-y-5 xl:col-span-3">
