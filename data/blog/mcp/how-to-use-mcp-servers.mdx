@@ -1,0 +1,77 @@
+---
+title: How to use MCP Servers
+date: '2025-06-11'
+tags: ['mcp', 'code', 'ai']
+draft: false
+summary: This guide explains how to integrate MCP servers with development tools, focusing on setting up GitHub's MCP server in VS Code using Docker to enhance workflow automation and access external data sources.
+---
+
+In the previous post, we discussed what MCP (Model Context Protocol) is and how it enables Large Language Models (LLMs) to interact with external tools and data sources. In this post, we will explore how to use MCP servers to automate your workflows.
+
+There are many MCP servers available which you can integrate with applications like VS Code, Claude Desktop etc. If you go to mcp.so[^1] or MCP Servers on GitHub[^2], you can search for the one that best fits your needs.
+
+Before we integrate an MCP server, one thing to note is that while it's possible to have remote MCP servers, most of the tools available today run locally on your system with tools like npx, docker etc.
+
+> [!CAUTION]
+> Be careful when running MCP servers locally. Only use official MCP servers from trusted sources. Running unverified servers can lead to security vulnerabilities.
+
+## Integrating GitHub MCP server in VS Code
+GitHub MCP server[^3] runs on docker. To integrate it with VS Code, follow these steps:
+
+_Note: The steps might differ for other clients like Claude Desktop._
+
+1. Ensure docker is running on your system.
+1. Generate a Personal Access Token (PAT) from GitHub which will be used to communicate with GitHub on your behalf.
+1. Open VS Code and open settings JSON.
+1. Paste the following in `settings.json`:
+    ```json
+    {
+      "mcp": {
+        "inputs": [
+          {
+            "type": "promptString",
+            "id": "github_token",
+            "description": "GitHub Personal Access Token",
+            "password": true
+          }
+        ],
+        "servers": {
+          "github": {
+            "command": "docker",
+            "args": [
+              "run",
+              "-i",
+              "--rm",
+              "-e",
+              "GITHUB_PERSONAL_ACCESS_TOKEN",
+              "ghcr.io/github/github-mcp-server"
+            ],
+            "env": {
+              "GITHUB_PERSONAL_ACCESS_TOKEN": "${input:github_token}"
+            }
+          }
+        }
+      }
+    }
+    ```
+1. Once added and docker is running, you will see something like this in VS Code which indicates that the MCP server is running:
+    ![MCP Server in VS Code](/static/images/mcp/GitHub%20MCP%20Server%20in%20VS%20Code.png)
+1. You can also verify it in docker desktop:
+    ![MCP Server in Docker Desktop](/static/images/mcp/GitHub%20MCP%20Server%20Container.png)
+1. Now, open GitHub Copilot and ask something like "Show me the top 10 latest commits in `dotnet/aspire` repository." or "What are the open issues in this repository?". You will notice that it will use the GitHub MCP server to fetch the information. Below is the output at the time of writing this post:
+    ![GitHub Copilot List Commits Response](/static/images/mcp/Copilot%20Output.png)
+
+_Note: You will need to use **Agent** mode in GitHub Copilot to use the MCP server._
+
+Couple of things to note in the above JSON:
+1. It is using an `input` to get person access token. This ensures that the PAT is interactively asked from user and stored securely.
+1. The server name is `github` and it is running using `docker` command.
+
+## Conclusion
+In this post, we explored how to use MCP servers, specifically the GitHub MCP server, to enhance your development experience in VS Code. By integrating MCP servers, you can automate workflows and access external data sources seamlessly.
+
+In future posts, I will explore how to integrate MCP in your AI applications using libraries like Semantic Kernel.
+
+[^1]: [MCP.so](https://mcp.so/)
+[^2]: [MCP Servers GitHub](https://github.com/modelcontextprotocol/servers)
+[^3]: [GitHub MCP Server](https://github.com/github/github-mcp-server)

@@ -1,0 +1,40 @@
+---
+title: What is MCP?
+date: '2025-06-10'
+tags: ['mcp', 'code', 'ai']
+draft: false
+summary: MCP (Model Context Protocol) is an open standardized protocol that enables Large Language Models to interact with external tools and data sources through a client-server architecture, similar to how HTTP standardizes web communication.
+---
+
+Struggling to integrate AI into your workflows? MCP might be the missing piece. If you work in tech then chances are that you have heard the name and wondering what it is and how to leverage it or worse yet, your leadership has mandated its integration into your products, leaving you scrambling to understand it.
+
+Other posts in this series:
+1. [What is MCP? (This post)](/blog/mcp/what-is-mcp)
+1. [How to use MCP Servers](/blog/mcp/how-to-use-mcp-servers)
+
+In this series of posts, I will try to help you understand what MCP is and how to use it but before we do that let's talk a bit about LLMs.
+
+LLMs are **Large Language Models**. They are a type of AI which are trained on vast amounts of data and can generate human-like text. LLMs excel at generating text, but to take actions in real applications, they need additional capabilities—this is where MCP comes in.
+
+## What is MCP?
+MCP stands for **Model Context Protocol**. From the MCP website[^1]
+
+> MCP is an open protocol that standardizes how applications provide context to LLMs. Think of MCP like a USB-C port for AI applications. Just as USB-C provides a standardized way to connect your devices to various peripherals and accessories, MCP provides a standardized way to connect AI models to different data sources and tools.
+
+MCP is like HTTP. It's standard protocol which allows you to connect LLMs to tools (e.g., querying a database, reading file system etc.) using a consistent interface. It also uses the client-server paradigm.
+
+There are mainly 2 things to know when dealing with MCP:
+1. **MCP Clients** - These are applications like VS Code, Claude Desktop etc. and connect to MCP Servers to actually run the tools.
+1. **MCP Servers[^2]** - These are programs which expose tools and APIs through MCP protocol.
+
+_If you look at the MCP website there are other components as well but these are the main ones you will deal with._
+
+Depending on which type of application you are developing, you will have to implement one of these components. Most of the time, it will be an MCP server to expose your tools. The clients are typically well known applications like VS Code, Claude Desktop, etc. which are already widely used.
+
+With MCP, the LLMs still can't run anything themselves but the host applications can provide this context that there are tools available which LLMs can lean on to get some data. LLMs in their response tell the clients which tool to run and with what parameters. The clients then run the tool and return the result back to the LLMs as additional context. LLMs can then use this context to generate more accurate and relevant responses.
+
+## Conclusion
+This was a short intro to MCP. In the next post, I will explain how to use an MCP server to automate your workflows.
+
+[^1]: [MCP Website](https://modelcontextprotocol.io/introduction)
+[^2]: [MCP Servers](https://mcp.so/)
