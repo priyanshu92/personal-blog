@@ -33,7 +33,7 @@ export default function PostLayout({ content, next, prev, children }: LayoutProp
                     <time dateTime={date}>{formatDate(date, siteMetadata.locale)}</time>
                     {content.readingTime && (
                       <>
-                        <span className="mx-1">•</span>
+                        <span className="mx-1"> • </span>
                         <span aria-label="Reading time">{content.readingTime.text}</span>
                       </>
                     )}

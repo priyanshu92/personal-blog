@@ -128,7 +128,7 @@ export default function ListLayout({
                       <time dateTime={date}>{formatDate(date, siteMetadata.locale)}</time>
                       {post.readingTime && (
                         <>
-                          <span className="mx-1">•</span>
+                          <span className="mx-1"> • </span>
                           <span aria-label="Reading time">{post.readingTime.text}</span>
                         </>
                       )}

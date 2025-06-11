@@ -138,7 +138,7 @@ export default function ListLayoutWithTags({
                           </time>
                           {post.readingTime && (
                             <>
-                              <span className="mx-1">•</span>
+                              <span className="mx-1"> • </span>
                               <span aria-label="Reading time">{post.readingTime.text}</span>
                             </>
                           )}
