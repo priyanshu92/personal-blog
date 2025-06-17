@@ -6,7 +6,9 @@ draft: false
 summary: This guide explains how to integrate MCP servers with development tools, focusing on setting up GitHub's MCP server in VS Code using Docker to enhance workflow automation and access external data sources.
 ---
 
-In the previous post, we discussed what MCP (Model Context Protocol) is and how it enables Large Language Models (LLMs) to interact with external tools and data sources. In this post, we will explore how to use MCP servers to automate your workflows.
+**Edit: GitHub has recently released their remote MCP server. Please see how to use that [below](#integrating-remote-github-mcp-server-in-vs-code).**
+
+In the previous post, we discussed what MCP (Model Context Protocol) is and how it enables Large Language Models (LLMs) to interact with external tools and data sources. In this post, we will explore how to use MCP servers to automate your workflows. I will be using VS Code as an example.
 
 There are many MCP servers available which you can integrate with applications like VS Code, Claude Desktop etc. If you go to mcp.so[^1] or MCP Servers on GitHub[^2], you can search for the one that best fits your needs.
 
@@ -68,6 +70,27 @@ Couple of things to note in the above JSON:
 1. It is using an `input` to get person access token. This ensures that the PAT is interactively asked from user and stored securely.
 1. The server name is `github` and it is running using `docker` command.
 
+## Integrating Remote GitHub MCP server in VS Code
+Remote MCP servers are like web APIs which the MCP clients call to run tools and get response. But instead of traditional web APIs, they use Server Sent Events (SSE). Since they don't run on your machine they are much safer to use as compared to local MCP severs.
+
+GitHub has recently released a remote MCP server[^4]. To integrate it with VS Code:
+
+1. Add the following in `settings.json` in your VS Code:
+
+    ```json
+    {
+      "mcp": {
+        "servers": {
+          "github": {
+            "url": "https://api.githubcopilot.com/mcp/"
+          }
+        }
+      }
+    }
+    ```
+2. You will see a `Start` button above `github` in your config file. Click on it and VS Code will prompt to login to GitHub. _This is powered by OAuth protocol so there are no personal access tokens involved._
+3. Once logged in, you will see the MCP server is up and running.
+
 ## Conclusion
 In this post, we explored how to use MCP servers, specifically the GitHub MCP server, to enhance your development experience in VS Code. By integrating MCP servers, you can automate workflows and access external data sources seamlessly.
 
@@ -78,3 +101,4 @@ In future posts, I will explore how to integrate MCP in your AI applications usi
 [^1]: [MCP.so](https://mcp.so/)
 [^2]: [MCP Servers GitHub](https://github.com/modelcontextprotocol/servers)
 [^3]: [GitHub MCP Server](https://github.com/github/github-mcp-server)
+[^4]: [GitHub Remote MCP Server](https://github.blog/changelog/2025-06-12-remote-github-mcp-server-is-now-available-in-public-preview/)
