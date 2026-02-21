@@ -9,7 +9,7 @@ interface Project {
 const projectsData: Project[] = [
   {
     title: 'Power Pages',
-    description: `Worked on pro-dev authoring tools for Power Pages. Created a [Claude Code plugin](https://aka.ms/ppskills)`,
+    description: `Improved pro-dev authoring tools for Power Pages. Created a [Claude Code plugin](https://aka.ms/ppskills), worked on [VS Code extension](https://github.com/microsoft/powerplatform-vscode) and [PAC CLI](https://www.nuget.org/packages/Microsoft.PowerApps.CLI)`,
     imgSrc: '/static/images/power-pages.svg',
     href: 'https://powerpages.microsoft.com',
     techStack: ['C#', 'Typescript'],

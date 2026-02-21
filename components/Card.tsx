@@ -1,5 +1,46 @@
 import Image from './Image'
 import Link from './Link'
+import type { ReactNode } from 'react'
+
+const markdownLinkPattern = /\[([^\]]+)\]\(([^)]+)\)/g
+
+const renderDescription = (description: string) => {
+  const matches = Array.from(description.matchAll(markdownLinkPattern))
+
+  if (matches.length === 0) {
+    return description
+  }
+
+  const renderedParts: ReactNode[] = []
+  let lastIndex = 0
+
+  matches.forEach((match, index) => {
+    const [fullMatch, text, href] = match
+    const matchStart = match.index ?? 0
+
+    if (matchStart > lastIndex) {
+      renderedParts.push(description.slice(lastIndex, matchStart))
+    }
+
+    renderedParts.push(
+      <Link
+        key={`${href}-${index}`}
+        href={href}
+        className="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400"
+      >
+        {text}
+      </Link>
+    )
+
+    lastIndex = matchStart + fullMatch.length
+  })
+
+  if (lastIndex < description.length) {
+    renderedParts.push(description.slice(lastIndex))
+  }
+
+  return renderedParts
+}
 
 const Card = ({ title, description, imgSrc, href, techStack }) => (
   <div className="md max-w-[544px] p-4 md:w-1/2">
@@ -36,7 +77,9 @@ const Card = ({ title, description, imgSrc, href, techStack }) => (
             title
           )}
         </h2>
-        <p className="prose mb-3 max-w-none text-gray-500 dark:text-gray-400">{description}</p>
+        <p className="prose mb-3 max-w-none text-gray-500 dark:text-gray-400">
+          {renderDescription(description)}
+        </p>
         {techStack && techStack.length > 0 && (
           <div className="mb-3 flex flex-wrap gap-2">
             {techStack.map((tech: string) => (
