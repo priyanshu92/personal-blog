@@ -8,6 +8,13 @@ interface Project {
 
 const projectsData: Project[] = [
   {
+    title: 'Power Pages',
+    description: `Worked on pro-dev authoring tools for Power Pages. Created a [Claude Code plugin](https://aka.ms/ppskills)`,
+    imgSrc: '/static/images/power-pages.svg',
+    href: 'https://powerpages.microsoft.com',
+    techStack: ['C#', 'Typescript'],
+  },
+  {
     title: 'Bing.com',
     description: `Implemented user authentication for bing.com using OpenIdConnect and OAuth 2.1 protocols. This involved integrating with Microsoft identity platform to enable secure sign-in. Implemented a custom cookie serializer to ensure small cookie size for performance optimization.`,
     imgSrc: '/static/images/bing.png',
