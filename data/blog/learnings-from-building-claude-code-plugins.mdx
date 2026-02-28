@@ -1,0 +1,158 @@
+---
+title: What I learned building Claude Code plugins
+date: '2026-02-28'
+tags: ['ai', 'code', 'claude-code', 'plugins']
+draft: false
+summary: I spent a few weeks building Claude Code plugins for Power Platform and ran into a lot of things nobody warns you about. Here's what I wish I'd known on day one.
+---
+
+I spent the last few weeks building Power Pages plugin in [Power Platform Skills](https://github.com/microsoft/power-platform-skills), an open-source plugin marketplace for Claude Code and GitHub Copilot CLI. The plugins let you create, deploy, and manage Power Pages sites through conversation. Think "build me a job board with React" and it actually scaffolds the thing, sets up the database, wires up the API, and deploys it.
+
+It was a lot of fun building and learning. Sharing some of the lessons here in case it helps anyone else building Claude Code plugins, or just to document the weird gotchas for my future self. By the way, this is the most non-software thing I have shipped and yet so close to software development.
+
+## How a plugin is structured
+
+A Claude Code plugin has two main building blocks: skills and agents. Skills are the workflows that users invoke (defined in `SKILL.md` files with YAML frontmatter, e.g., `/create-site`). Agents are specialized personas that get spawned by skills when needed to handle a specific sub-task.
+
+There used to be a separate "commands" concept, but that's gone now. Skills handle everything.
+
+The plugin metadata lives in `.claude-plugin/plugin.json`. If you're building a marketplace (a collection of plugins), there's a separate `marketplace.json` that points to each plugin.
+
+Here's roughly what the directory looks like:
+
+```
+my-plugin/
+├── .claude-plugin/
+│   └── plugin.json
+├── agents/
+├── skills/
+│   ├── create-site/
+│   │   ├── SKILL.md
+│   │   ├── assets/
+│   │   └── scripts/
+│   └── deploy-site/
+│       └── SKILL.md
+├── shared/
+└── AGENTS.md
+```
+
+Nothing surprising here.
+
+## The allowed-tools format that silently breaks on GitHub Copilot CLI
+
+GitHub Copilot CLI expects the `allowed-tools` field in skill frontmatter to be a comma-separated string. Claude Code plugins expect it to be a YAML list. If you use the wrong format, the skill will not work on GitHub Copilot CLI. It's better to use the comma-separated string format since it works on both.
+
+```yaml
+# This works
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep
+
+# This doesn't work on GitHub Copilot CLI
+allowed-tools: ["Read", "Write", "Edit", "Bash"]
+
+# Neither does this
+allowed-tools:
+  - Read
+  - Write
+```
+
+## Agents should propose first, then act
+
+We originally split agents into "read-only" (analyze and propose) and "implementation" (write code). The read-only agent would produce a plan, pass it back to the main conversation, and then the main agent would execute it. Clean separation, right?
+
+In practice it was clunky. The main agent would misinterpret the plan, use wrong field names, or just make stuff up when translating the proposal into actual files. We were using the LLM as a middleman between two well-defined steps, and the middleman was the weakest link.
+
+So we changed the pattern: agents now propose a plan, wait for user approval via plan mode, and then execute the plan themselves. The Data Model Architect proposes tables, shows you a Mermaid diagram, and after you say "looks good," it creates the tables. The Table Permissions Architect proposes permissions, renders a visual diagram in the browser, and after approval creates the YAML files using deterministic scripts.
+
+This is better because the agent that analyzed the problem is the same one that acts on it. No context lost in translation.
+
+## Don't scaffold a sample site. Scaffold a loading screen.
+
+This one surprised me. Our `create-site` skill originally scaffolded a full sample site with headers, footers, an about page, the works. The idea was to give the AI a head start. What actually happened was the AI treated the sample site as something to preserve. It would tweak the sample header text, rearrange the sample navigation, and try to morph the demo into whatever the user asked for. The results were mediocre.
+
+We replaced the scaffold with a loading screen animation. Just a spinner that says "Building your site..." with some branded styling. The skill instructions explicitly say "this is temporary, replace everything." And suddenly the output got dramatically better. The AI stopped trying to salvage someone else's layout and started building from scratch.
+
+Blank canvas beats demo every time. Also, do not let AI generate the basic site structure. It will unnecessarily burn tokens for something which is basically boilerplate.
+
+## Playwright quirks that will annoy you
+
+We used Playwright via MCP to give the AI a live browser preview while it builds the site. Two things I wish I'd known:
+
+First, don't launch Playwright in fullscreen mode. We passed `--start-maximized` and every time the AI rendered a preview, the browser stole focus from the terminal. You're typing a command, and suddenly Chrome is in your face. Using the default 1280x720 viewport fixed this.
+
+Second, don't let the skill close the browser when it finishes. We had a "close the browser" step at the end, which killed the preview while the user was still looking at it. We ended up removing `browser_close` from the skill's allowed-tools entirely.
+
+Oh, and one more: if your agent instructions say "resize the browser before navigating," make sure you actually grant the agent the `browser_resize` tool. We had two agents that instructed the AI to resize the viewport but didn't list the resize tool in their `tools` frontmatter. The agent would just skip it silently and render the diagram in whatever tiny default viewport it had. Double check that every action your agent instructions mention has a corresponding tool grant.
+
+## Don't let the LLM write config files. Use scripts.
+
+This was maybe the single biggest reliability improvement we made. Our permissions agent originally generated YAML files directly. Table permission files, site setting files, web role files. The LLM would analyze the site, figure out what permissions were needed, and then write the YAML.
+
+The problem is that LLMs hallucinate in YAML. Not the content, but the format. Booleans would get quoted (`"true"` instead of `true`). Fields would appear in random order instead of alphabetical. Field names would be wrong (`entityName` instead of `entityname`). UUIDs would be malformed. The YAML was valid but incorrect in ways that Power Pages would silently reject.
+
+We replaced all of this with deterministic Node.js scripts: `create-table-permission.js`, `create-site-setting.js`, `create-web-role.js`. The agent figures out _what_ to create (which tables, which permissions, which scopes) and then calls the script with the right arguments. The script handles the YAML formatting, field ordering, UUID generation, and validation.
+
+The failure rate dropped to basically zero. The LLM is good at deciding what permissions a site needs. It's bad at writing YAML that matches a specific undocumented schema. Let each do what it's good at.
+
+This turned into a broader principle we started calling "LLMs compose, scripts execute." The LLM determines intent. Deterministic code carries it out. Anywhere we had the LLM generating structured output that needed to be exact (YAML configs, API calls with specific URL encoding, PAC CLI commands), we wrapped it in a script or used the CLI directly.
+
+## Split fat agents into focused ones
+
+We started with a single "Web API Permissions" agent that handled both table permissions and site settings. It was a 645-line markdown file that tried to do two related but distinct jobs: figure out CRUD permissions and scopes for each table, and figure out which Dataverse columns to expose in site settings (with case-sensitive column names queried from the OData API).
+
+The agent worked but it was flaky. It would sometimes skip the site settings entirely, or mix up column names between tables, or just run out of steam halfway through a complex site. The context window was getting crowded.
+
+We split it into two agents: `table-permissions-architect` (handles CRUD permissions, scopes, parent-child relationships, append/appendTo logic) and `webapi-settings-architect` (handles `Webapi/<table>/enabled` and `Webapi/<table>/fields` site settings with validated column names from Dataverse). Each agent is smaller, more focused, and more reliable.
+
+The split also uncovered a subtle bug. Lookup columns in Dataverse need _both_ the `LogicalName` (like `cr87b_categoryid`) and the OData computed attribute (`_cr87b_categoryid_value`) in the fields site setting. The original fat agent missed this consistently. The focused settings agent catches it because that's the only thing it thinks about.
+
+## Always use TaskList tool
+
+When writing a skill that has multiple steps, always use the TaskList tool to break it down. The TaskList gives the LLM a clear structure for multi-step workflows and helps it keep track of what it's done and what it has left to do. We had a few skills that just used free-form instructions for multi-step processes, but the reliability improved dramatically once we switched to TaskList. The LLM is much better at following a checklist than remembering a free-form list of steps.
+
+The experience of using the plugin is now consistent across skills. Every skill starts with a plan, then executes the plan step by step, checking off tasks as it goes. The user can see the progress and understand what the agent is doing at each stage.
+
+## Verify everything the LLM claims it did
+
+"I've created 4 tables in Dataverse" is not the same as 4 tables actually existing in Dataverse. We learned this the hard way when an agent confidently reported success on a schema deployment that had silently failed due to an expired auth token.
+
+Now every mutating action follows a Do, Verify, Report cycle. The agent creates a table, then queries the API to confirm the table exists, then reports the verified result. If verification fails, it says so instead of assuming success.
+
+The verification has to use a different code path than the action. You can't verify a create by reading the create response, because that just tells you the request was accepted, not that it persisted. Query independently.
+
+## Build evals before you think you need them
+
+I'm glad we built an evaluation framework early. Each skill has a `rubric.json` with weighted assertions and a `prompts.csv` with test cases. The evals run in two stages: deterministic checks (did the skill create the right files? does the code compile?) and model-assisted rubrics (is the code idiomatic? does the design look reasonable?).
+
+It caught regressions we would have missed. A change to improve one skill's template broke another skill's validation logic, and we only knew because the evals flagged it. Without this, we'd have been playing whack-a-mole with 9 skills and no way to tell what was working.
+
+## Share code aggressively
+
+By the time we had 9 skills, the duplication was getting out of hand. Five different skills needed the same OData authentication header pattern. Three skills checked whether the PAC CLI was installed. Two skills generated UUIDs.
+
+We pulled all of this into shared directories. Reference documents (OData patterns, Dataverse prerequisites, framework conventions) went into `references/`. Utility scripts (UUID generation, activation status checks) went into `scripts/`. Validation helpers used by stop hooks got centralized too.
+
+It felt like overkill at first. Then I changed the OData auth header format in one place instead of five, and it stopped feeling like overkill.
+
+## Bump the version. Every time.
+
+If your marketplace has auto-update enabled, users only get your fixes when the version number in `plugin.json` changes. We went through `1.0.0` to `1.0.3` in a few weeks. Forgetting to bump it means your fix ships but nobody receives it. A small thing, easy to forget, annoying when you do.
+
+## Write an AGENTS.md for your AI teammates
+
+This might be the weirdest thing about building plugins for AI tools: your contributors are also AIs. We have an `AGENTS.md` at both the repo root and inside each plugin. It tells AI agents how the repo is structured, what conventions to follow (comma-separated allowed-tools, don't duplicate code, check for existing helpers before writing new ones), and how to test locally.
+
+It works. After adding the `AGENTS.md` note about allowed-tools format, we stopped seeing AI-generated PRs that used JSON array syntax. Without it, every AI that touched the repo would discover the JSON array format on its own and confidently use it, because it looks more "correct." Documentation for humans prevents human mistakes. Documentation for AIs prevents AI mistakes.
+
+Also, since Claude Code doesn't follow `AGENTS.md`, create a `CLAUDE.md` and symlink to `AGENTS.md`.
+
+## What I'd do differently
+
+A few things. I'd start with deterministic scripts for any structured output from day one, instead of letting the LLM write YAML and fixing it later. I'd split agents sooner. Our fat permissions agent worked well enough that we didn't split it until the reliability issues forced our hand, and we should have seen it coming.
+
+I'd also think harder about the "compose vs execute" boundary up front. Every time we had the LLM generating something that needed to be exact, it eventually broke. Every time we wrapped that in a script and had the LLM just pass arguments, it worked. That pattern is worth internalizing early.
+
+And I'd still start the eval framework on day one. That hasn't changed.
+
+We are also investing a lot in the Power Platform CLI since CLI based agents are extremely good at using CLI. The CLI gives you a lot of the benefits of scripts (deterministic, exact output) while also being more flexible and easier to maintain than custom scripts. If your platform has a CLI, leverage it as much as possible instead of building your own scripts.
+
+The full source is at [microsoft/power-platform-skills](https://github.com/microsoft/power-platform-skills) if you want to poke around.
